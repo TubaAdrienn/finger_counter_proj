@@ -49,6 +49,48 @@ def find_contour(im):
                 conts.append([i, j])
     return new_img, conts
 
+
+def left_index(points):
+    minn = 0
+    for i in range(1, len(points)):
+        if points[i][0] < points[minn][0]:
+            minn = i
+        elif points[i][0] == points[minn][0]:
+            if points[i][1] > points[minn][1]:
+                minn = i
+    return minn
+
+
+def orientation(p, q, r):
+    val = (q[1] - p[1]) * (r[0] - q[0]) - (q[0] - p[0]) * (r[1] - q[1])
+
+    if val == 0:
+        return 0
+    elif val > 0:
+        return 1
+    else:
+        return 2
+
+def find_convex_hull(conts):
+    n = len(conts)
+    l = left_index(conts)
+    hull = []
+    p = l
+    q = 0
+    while (True):
+        hull.append(p)
+        q = (p + 1) % n
+
+        for i in range(n):
+            if (orientation(conts[p], conts[i], conts[q]) == 2):
+                q = i
+        p = q
+        if (p == l):
+            break
+
+    return hull
+
+
 def find_defect_points(img, contours):
     return True
 
@@ -77,18 +119,27 @@ def count_fingers(defects, contours):
     if cnt > 0 and biggie == False:
         cnt = cnt + 1
 
-def draw_contour(im, conts):
+def draw_contour(im, conts, color):
     for i in range(len(conts)):
-        im = cv2.circle(im, (conts[i][1], conts[i][0]), radius=1, color=(0, 0, 255), thickness=-1)
+        im = cv2.circle(im, (conts[i][1], conts[i][0]), radius=1, color=color, thickness=-1)
+    return im
+
+def draw_hull(im, conts, indexes, color):
+    for i in range(len(indexes)-1):
+        start_point= (conts[indexes[i]][1], conts[indexes[i]][0])
+        end_point=(conts[indexes[i+1]][1], conts[indexes[i+1]][0])
+        im = cv2.line(im, start_point, end_point, color=color, thickness=2)
     return im
 
 
+# Main
 
-
-# Read the image
-im = img.imread("finger2.jpg")
+im = cv2.imread("6.jpg")
 black_and_white = in_range_img(im)
 result, conts = find_contour(black_and_white)
-im = draw_contour(im, conts)
+im = draw_contour(im, conts, (0, 0, 255))
+hull = find_convex_hull(conts)
+im = draw_hull(im, conts, hull, (0,255,0))
 cv2.imshow("hull", im)
 cv2.waitKey(0)
+

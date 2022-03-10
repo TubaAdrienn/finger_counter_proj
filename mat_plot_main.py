@@ -21,8 +21,33 @@ def in_range_img(im):
             new_img[i][j][3] = 1
     return new_img
 
-def find_contour():
-    return True
+def blur_image(image):
+    width, height = im.shape[:2]
+    blurred = np.zeros([width,height,3])
+
+    for i in range(width-1):
+        for j in range(height-1):
+            sum_points = image[i-1][j+1] + image[i][j + 1] + image[i + 1][j + 1] + image[i - 1][j] + image[i][j] + image[i +1][j] + image[i - 1][j - 1] + image[i][j - 1] + image[i + 1][j - 1]
+            blurred[i][j] = (sum_points/9)
+
+    return blurred
+
+def find_contour(im):
+    width, height = im.shape[:2]
+    new_img = np.zeros([width, height, 4])
+    conts = []
+    for i in range(width-1):
+        for j in range(height-1):
+            current = float(im[i][j][0])
+            next_x = float(im[i+1][j][0])
+            next_y = float(im[i][j+1][0])
+            if current == (1-next_x) or current == (1-next_y):
+                new_img[i][j][0] = 0
+                new_img[i][j][1] = 0
+                new_img[i][j][2] = 1
+                new_img[i][j][3] = 1
+                conts.append([i, j])
+    return new_img, conts
 
 def find_defect_points(img, contours):
     return True
@@ -33,7 +58,7 @@ def count_fingers(defects, contours):
         biggie = False
     for i in range(defects.shape[0]):  # calculate the angle
 
-        s, e, f, d = defects[i][0]
+        s, e, f = defects[i][0]
         start = tuple(contours[s][0])
         end = tuple(contours[e][0])
         far = tuple(contours[f][0])
@@ -52,10 +77,18 @@ def count_fingers(defects, contours):
     if cnt > 0 and biggie == False:
         cnt = cnt + 1
 
+def draw_contour(im, conts):
+    for i in range(len(conts)):
+        im = cv2.circle(im, (conts[i][1], conts[i][0]), radius=1, color=(0, 0, 255), thickness=-1)
+    return im
+
+
+
+
 # Read the image
-im = img.imread("finger4.jpg")
-
-result = in_range_img(im)
-
-cv2.imshow("Result", result)
+im = img.imread("finger2.jpg")
+black_and_white = in_range_img(im)
+result, conts = find_contour(black_and_white)
+im = draw_contour(im, conts)
+cv2.imshow("hull", im)
 cv2.waitKey(0)

@@ -103,7 +103,7 @@ def draw_hull(im, conts, indexes, color):
         im = cv2.line(im, start_point, end_point, color=color, thickness=2)
     return im, points
 
-def distance(points, im):
+def sort_points(points, im):
     width, height = im.shape[:2]
     points_result =[]
 
@@ -112,24 +112,41 @@ def distance(points, im):
         y1= points[i][1]
         x2= points[i+1][0]
         y2 = points[i+1][1]
-        distance = np.sqrt(np.power(x2 - x1, 2) + np.power(y2 - y1, 2))
-        if distance > 50 and y1<height:
+        dist = distance(x1,y1,x2,y2)
+        if dist > 50 and y1<height-10:
             im = cv2.circle(im, (x1,y1), radius=3, color=(255,0,255), thickness=-1)
             points_result.append((x1,y1))
     return im, points_result
 
+def distance(x1, y1, x2, y2):
+    return np.sqrt(np.power(x2 - x1, 2) + np.power(y2 - y1, 2))
+
+def count_fingers(points, centerX, centerY):
+    count = 0;
+    for i in range(len(points)-1):
+        if(distance(points[i][0], points[i][1], centerX, centerY) > 200):
+            count += 1
+    return count
+
+
+
 # Main
-im = cv2.imread("finger3.png")
+im = cv2.imread("finger5.jpg")
 black_and_white = in_range_img(im)
 result, conts = find_contour(black_and_white)
 im = draw_contour(im, conts, (0, 0, 255))
 hull = find_convex_hull(conts)
 im, points = draw_hull(im, conts, hull, (0,255,0))
-im, points_result = distance(points,im)
-im = cv2.circle(im, (175,350), radius=3, color=(255, 0, 0), thickness=-1)
+im, points_result = sort_points(points,im)
+height, width = im.shape[:2]
+centerX = int(width / 2)
+centerY = height - 60
+im = cv2.circle(im, (centerX, centerY), radius=3, color=(255, 0, 0), thickness=-1)
 for i in range(len(points_result)):
-    im = cv2.line(im, (175,350), points_result[i], color=(255,0,0), thickness=2)
+    im = cv2.line(im, (centerX,centerY), points_result[i], color=(255,0,0), thickness=2)
 
+cnt = count_fingers(points_result, centerX, centerY)
+cv2.putText(im, str(cnt), (0, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
 cv2.imshow("hull", im)
 cv2.waitKey(0)
 

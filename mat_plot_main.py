@@ -1,7 +1,6 @@
 import numpy as np
 import cv2
 from statistics import mean
-import math
 
 def in_range_img(im):
     width, height = im.shape[:2]
@@ -38,6 +37,11 @@ def find_contour(im):
                 conts.append([i, j])
     return new_img, conts
 
+def draw_contour(im, conts, color):
+    for i in range(len(conts)):
+        im = cv2.circle(im, (conts[i][1], conts[i][0]), radius=1, color=color, thickness=-1)
+    return im
+
 def left_index(points):
     minn = 0
     for i in range(1, len(points)):
@@ -48,13 +52,11 @@ def left_index(points):
                 minn = i
     return minn
 
-
-def orientation(p, q, r):
-    val = (q[1] - p[1]) * (r[0] - q[0]) - (q[0] - p[0]) * (r[1] - q[1])
-
-    if val == 0:
+def direction(x, y, z):
+    result = (y[1] - x[1]) * (z[0] - y[0]) - (y[0] - x[0]) * (z[1] - y[1])
+    if result == 0:
         return 0
-    elif val > 0:
+    elif result > 0:
         return 1
     else:
         return 2
@@ -63,25 +65,19 @@ def find_convex_hull(conts):
     n = len(conts)
     l = left_index(conts)
     hull = []
-    p = l
-    q = 0
+    x = 0
+    y = l
     while (True):
-        hull.append(p)
-        q = (p + 1) % n
-
+        hull.append(y)
+        x = (y + 1) % n
         for i in range(n):
-            if (orientation(conts[p], conts[i], conts[q]) == 2):
-                q = i
-        p = q
-        if (p == l):
+            if (direction(conts[y], conts[i], conts[x]) == 2):
+                x = i
+        y = x
+        if (y == l):
             break
     return hull
 
-
-def draw_contour(im, conts, color):
-    for i in range(len(conts)):
-        im = cv2.circle(im, (conts[i][1], conts[i][0]), radius=1, color=color, thickness=-1)
-    return im
 
 def draw_hull(im, conts, indexes, color):
     height, width = im.shape[:2]
@@ -137,7 +133,6 @@ def count_fingers(points, centerX, centerY):
         d = distance(points[i][0], points[i][1], centerX, centerY)
         dist.append(d)
         sum +=d
-        print("Distance "+str(d))
 
     for j in range(len(dist)):
         if (dist[j]>250):
@@ -145,11 +140,9 @@ def count_fingers(points, centerX, centerY):
 
     return count
 
-# Images mine: test1.jpg -5, test10.jpg -2, test11.jpg - 3, test9.jpg -1
-
 # Main
 # Read image
-im = cv2.imread("test1.jpg")
+im = cv2.imread("test9.jpg")
 print('read image. now copy')
 original = im.copy()
 print('copied. now black and white.')
